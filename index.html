@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сапер</title>
+<style>
+:root{
+  --bg:#dfe8e4;--panel:#eef4f1;--tile:#f7fbf8;--tile-edge:#b7c9c1;--open:#c6d6ce;
+  --ink:#17302b;--muted:#53706a;--accent:#1f6f5c;--on-accent:#fff;--mine:#c4452d;
+  --n1:#2563a8;--n2:#2f7d3a;--n3:#c4452d;--n4:#5b3a9a;--n5:#8a4b12;--n6:#0e7c86;--n7:#222;--n8:#666;
+  --cell:34px;color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111d1a;--panel:#192a26;--tile:#2d433d;--tile-edge:#0d1715;--open:#1b2c28;
+  --ink:#e3efea;--muted:#8fb0a7;--accent:#5fc4a8;--on-accent:#0b1c17;--mine:#ee7258;
+  --n1:#7db3f0;--n2:#6cc37a;--n3:#ee7258;--n4:#b79af0;--n5:#d9a05b;--n6:#5fd0d9;--n7:#ddd;--n8:#aaa;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111d1a;--panel:#192a26;--tile:#2d433d;--tile-edge:#0d1715;--open:#1b2c28;
+  --ink:#e3efea;--muted:#8fb0a7;--accent:#5fc4a8;--on-accent:#0b1c17;--mine:#ee7258;
+  --n1:#7db3f0;--n2:#6cc37a;--n3:#ee7258;--n4:#b79af0;--n5:#d9a05b;--n6:#5fd0d9;--n7:#ddd;--n8:#aaa;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Rubik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px 12px;-webkit-user-select:none;user-select:none}
+main{width:100%;max-width:1040px;display:flex;flex-direction:column;align-items:center;gap:16px}
+h1{margin:0;font-size:clamp(28px,6vw,44px);font-weight:700;letter-spacing:-.02em}
+.levels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.levels button,.tools button{font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:2px solid transparent;border-radius:999px;padding:8px 16px;cursor:pointer}
+.levels button[aria-pressed="true"],.tools button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border-radius:14px;padding:8px 12px;width:min(100%,520px)}
+.stat{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;min-width:84px}
+.stat small{display:block;font-size:12px;font-weight:400;color:var(--muted);line-height:1}
+.stat.r{text-align:right}
+#face{font-size:30px;line-height:1;width:52px;height:52px;border-radius:50%;border:0;background:var(--tile);cursor:pointer}
+.wrap{max-width:100%;overflow-x:auto;padding:8px;background:var(--panel);border-radius:14px}
+#grid{display:grid;gap:2px;width:max-content;margin:0 auto;touch-action:manipulation}
+.c{width:var(--cell);height:var(--cell);padding:0;border:0;border-radius:5px;background:var(--tile);box-shadow:inset 0 -3px 0 var(--tile-edge);font:600 calc(var(--cell)*.52) "Rubik",system-ui,sans-serif;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.c.o{background:var(--open);box-shadow:none;cursor:default}
+.c.x{background:var(--mine);box-shadow:none}
+.c.bad{background:var(--open);box-shadow:none;text-decoration:line-through}
+.n1{color:var(--n1)}.n2{color:var(--n2)}.n3{color:var(--n3)}.n4{color:var(--n4)}.n5{color:var(--n5)}.n6{color:var(--n6)}.n7{color:var(--n7)}.n8{color:var(--n8)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#msg{min-height:24px;font-size:17px;font-weight:500;text-align:center}
+.hint{max-width:520px;color:var(--muted);font-size:14px;line-height:1.5;text-align:center;margin:0}
+@media (prefers-reduced-motion:no-preference){#face{transition:transform .12s}#face:active{transform:scale(.92)}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Сапер</h1>
+  <div class="levels" id="levels" role="group" aria-label="Сложность">
+    <button data-l="easy">Новичок</button>
+    <button data-l="mid">Любитель</button>
+    <button data-l="hard">Профи</button>
+  </div>
+  <div class="bar">
+    <div class="stat"><small>Мины</small><span id="mines">10</span></div>
+    <button id="face" aria-label="Новая игра">🙂</button>
+    <div class="stat r"><small>Время</small><span id="time">0</span></div>
+  </div>
+  <div class="wrap"><div id="grid" role="grid" aria-label="Игровое поле"></div></div>
+  <div id="msg" aria-live="polite"></div>
+  <div class="tools">
+    <button id="flagMode" aria-pressed="false">🚩 Режим флажков</button>
+  </div>
+  <p class="hint">Клик открывает клетку, правый клик или долгое нажатие ставит флажок. Клик по числу с нужным количеством флажков открывает соседние клетки. Первый ход всегда безопасный.</p>
+</main>
+<script>
+const LV={easy:[9,9,10],mid:[16,16,40],hard:[30,16,99]};
+const $=id=>document.getElementById(id);
+const grid=$('grid'),face=$('face');
+let lv='easy',C,R,M,cells,els,started,over,flags,opened,secs,tm,flagMode=false;
+
+function bestGet(l){try{return +localStorage.getItem('sapper-best-'+l)||0}catch(e){return 0}}
+function bestSet(l,v){try{localStorage.setItem('sapper-best-'+l,v)}catch(e){}}
+
+function size(){
+  const w=Math.min(innerWidth-48,1000);
+  const s=Math.max(20,Math.min(38,Math.floor((w-(C-1)*2)/C)));
+  document.documentElement.style.setProperty('--cell',s+'px');
+}
+function nb(i){
+  const x=i%C,y=(i/C)|0,r=[];
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    if(!dx&&!dy)continue;
+    const a=x+dx,b=y+dy;
+    if(a>=0&&a<C&&b>=0&&b<R)r.push(b*C+a);
+  }
+  return r;
+}
+function newGame(){
+  clearInterval(tm);
+  [C,R,M]=LV[lv];
+  cells=Array.from({length:C*R},()=>({m:0,n:0,o:0,f:0}));
+  started=false;over=false;flags=0;opened=0;secs=0;
+  $('time').textContent=0;$('mines').textContent=M;face.textContent='🙂';
+  const b=bestGet(lv);
+  $('msg').textContent=b?'Лучшее время: '+b+' с':'';
+  document.querySelectorAll('#levels button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.l===lv));
+  grid.style.gridTemplateColumns='repeat('+C+',var(--cell))';
+  grid.innerHTML='';els=[];
+  for(let i=0;i<C*R;i++){
+    const b=document.createElement('button');
+    b.className='c';b.dataset.i=i;b.setAttribute('role','gridcell');b.setAttribute('aria-label','Закрыта');
+    grid.appendChild(b);els.push(b);
+  }
+  size();
+}
+function place(safe){
+  const ban=new Set([safe,...nb(safe)]);
+  let pool=[];for(let i=0;i<C*R;i++)if(!ban.has(i))pool.push(i);
+  if(pool.length<M){pool=[];for(let i=0;i<C*R;i++)if(i!==safe)pool.push(i)}
+  for(let k=0;k<M;k++){
+    const j=k+Math.floor(Math.random()*(pool.length-k));
+    [pool[k],pool[j]]=[pool[j],pool[k]];
+    cells[pool[k]].m=1;
+  }
+  cells.forEach((c,i)=>{c.n=nb(i).filter(j=>cells[j].m).length});
+}
+function draw(i){
+  const c=cells[i],e=els[i];
+  e.className='c';e.textContent='';
+  if(c.o){
+    e.classList.add('o');
+    if(c.n){e.textContent=c.n;e.classList.add('n'+c.n)}
+    e.setAttribute('aria-label',c.n?'Число '+c.n:'Пусто');
+  }else if(c.f){e.textContent='🚩';e.setAttribute('aria-label','Флажок')}
+  else e.setAttribute('aria-label','Закрыта');
+}
+function open(i){
+  const st=[i];
+  while(st.length){
+    const k=st.pop(),c=cells[k];
+    if(c.o||c.f)continue;
+    c.o=1;opened++;draw(k);
+    if(!c.n)nb(k).forEach(j=>{if(!cells[j].o&&!cells[j].f)st.push(j)});
+  }
+}
+function lose(hit){
+  over=true;clearInterval(tm);face.textContent='😵';
+  cells.forEach((c,i)=>{
+    if(c.m&&!c.f){els[i].className='c o';els[i].textContent='💣'}
+    else if(!c.m&&c.f){els[i].className='c bad';els[i].textContent='🚩'}
+  });
+  els[hit].className='c x';els[hit].textContent='💣';
+  $('msg').textContent='Взрыв. Нажмите на смайлик, чтобы начать заново.';
+}
+function win(){
+  over=true;clearInterval(tm);face.textContent='😎';
+  cells.forEach((c,i)=>{if(c.m&&!c.f){c.f=1;draw(i)}});
+  $('mines').textContent=0;
+  const b=bestGet(lv);let t='Победа за '+secs+' с.';
+  if(!b||secs<b){bestSet(lv,secs);t+=' Новый рекорд!'}
+  $('msg').textContent=t;
+}
+function act(i){
+  if(over)return;
+  const c=cells[i];
+  if(c.o){
+    if(!c.n)return;
+    const ns=nb(i);
+    if(ns.filter(j=>cells[j].f).length!==c.n)return;
+    for(const j of ns){
+      if(cells[j].f||cells[j].o)continue;
+      if(cells[j].m){lose(j);return}
+      open(j);
+    }
+  }else{
+    if(c.f)return;
+    if(!started){
+      started=true;place(i);
+      tm=setInterval(()=>{secs++;$('time').textContent=secs},1000);
+      $('msg').textContent='';
+    }
+    if(c.m){lose(i);return}
+    open(i);
+  }
+  if(!over&&opened===C*R-M)win();
+}
+function flag(i){
+  if(over)return;
+  const c=cells[i];
+  if(c.o)return;
+  c.f=c.f?0:1;flags+=c.f?1:-1;
+  $('mines').textContent=M-flags;draw(i);
+}
+let pressT=0,longDone=false;
+grid.addEventListener('click',e=>{
+  const b=e.target.closest('.c');if(!b)return;
+  if(longDone){longDone=false;return}
+  const i=+b.dataset.i;
+  if(flagMode&&!cells[i].o)flag(i);else act(i);
+});
+grid.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const b=e.target.closest('.c');if(!b||longDone)return;
+  flag(+b.dataset.i);
+});
+grid.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse')return;
+  const b=e.target.closest('.c');if(!b)return;
+  longDone=false;
+  pressT=setTimeout(()=>{longDone=true;flag(+b.dataset.i);if(navigator.vibrate)navigator.vibrate(15)},400);
+});
+['pointerup','pointerleave','pointercancel','pointermove'].forEach(t=>grid.addEventListener(t,()=>clearTimeout(pressT)));
+face.onclick=newGame;
+$('flagMode').onclick=function(){flagMode=!flagMode;this.setAttribute('aria-pressed',flagMode)};
+$('levels').onclick=e=>{const b=e.target.closest('button');if(b){lv=b.dataset.l;newGame()}};
+addEventListener('resize',size);
+newGame();
+</script>
+</body>
+</html>
